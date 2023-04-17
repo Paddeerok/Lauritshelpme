@@ -4,19 +4,20 @@ library(tidyverse)
 
 # Indlæser pakker og sætter wd
 
-setwd("C:/Users/Frede/Desktop/BFTP/Datasæt Husk Hz-DB i navn")
+setwd("C:/Users/Frede/Desktop/BFTP/Bloed_data_2ms")
 
 # Laver liste af alle .txt filer i wd
 
 list_of_files <- list.files(path = ".", recursive = TRUE,
                             pattern = "\\.txt$", 
                             full.names = TRUE)
-data8kHz = data.frame(matrix(nrow = 531,ncol=0))
+# Bruges ikke
+## data8kHz = data.frame(matrix(nrow = 531,ncol=0))
 
 
-# Måske?? 
+# Måske?? BRUGES IKKE LIGE NU 
   
-df <- list_of_files %>% map_df(read.csv, sep = ",", .id = "FileName"
+## df <- list_of_files %>% map_df(read.csv, sep = ",", .id = "FileName"
                                
 # Men ellers??
   
@@ -36,12 +37,22 @@ fix_df <- data8kHz %>%
   mutate(Tid_i_ms = tidspunkter)
   
 
-ggplot 
+ggplot
+#Loader ggplot2 til nemmere datavisualisering
+library(ggplot2)
+
+ggplot("fix_df"((colnames(TRUE))))
+
+df <- fix_df
+
+df %>% tidyr::gather("id", "value", 1:59) %>% 
+  ggplot(., aes(Tid_i_ms, value))+
+  geom_point()+
+  geom_smooth(method = "lm", se=FALSE, color="black")+
+  facet_wrap(~id)
 
 
-
-
-x <- read_table("2kHz5ms10dBgain_1p00ADVpk_111ms_3_24_2023_2_28_07PM.txt", )
+x <- read_table("2kHz10dBgain_1p00ADVpk_111ms_3_24_2023_2_28_07PM.txt", )
 
 # Oprydning
 
