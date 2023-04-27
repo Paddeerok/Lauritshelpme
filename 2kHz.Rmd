@@ -1,0 +1,107 @@
+---
+title: "2kHz"
+output: html_document
+date: "2023-04-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+pacman::p_load('tidyverse', 'ggplot2')
+
+# setwd("C:/Users/Frede/Desktop/BFTP/Bloed_data_2ms")
+```
+
+
+## Looking at 2kHz 
+```{r}
+List_of_files <- list.files(path = "./Bloed_data_2ms/2kHz", 
+                            recursive = TRUE,
+                            pattern = "\\.txt$", 
+                            full.names = TRUE)
+```
+
+### Make a dataframe from list of files
+```{r}
+data2kHz <- List_of_files %>%
+  purrr::set_names(.) %>%
+  map_df(read_table, .id = "FileName", col_names = FALSE)
+```
+```{r}
+# Lav en liste af tidspunkter
+tidspunkter <- seq(0, 111, length.out = 532)
+
+Df <- data2kHz %>%
+  pivot_wider(names_from = FileName, values_from = X1) %>% 
+  unnest() %>%  
+  mutate(Tid_i_ms = tidspunkter)
+```
+
+```{r}
+# Plot ERP
+Df %>% tidyr::gather("id", "value", 1:6) %>% 
+  ggplot(., aes(Tid_i_ms, value),group=variable)+
+  geom_line()+
+  geom_point()+
+  geom_smooth(method = "lm", se=FALSE, color="black") 
+```
+
+```{r}
+# Vælger område med aktionspotentiale, ændrer her hvis punkter ikke skal tages med i tærskelvurdering
+aktion_Df <- Df[30:80,1:6] # Vælger output 30:80, for alle kolloner undtagen tid
+
+# Lav liste af aktion-differns
+P2P <- apply(aktion_Df,2,max)-apply(aktion_Df,2,min)                  
+
+#Lav liste med alle amplituder
+Decibel <- seq(51, 101, length.out = 6)   
+
+Tarskel <- do.call(rbind.data.frame, Map('c', P2P, Decibel))
+
+colnames(Tarskel)[1] <- "PtPmV"
+colnames(Tarskel)[2] <- "Amplitude"
+# laver dataframe med Decibel og P2P
+```
+
+# Linear model of Amblitude given PtP mV
+```{r}
+m.1 <- lm(Amplitude ~ PtPmV, data = Tarskel) # Create linear regression
+summary(m.1) # Give a summary of linear regression (sanity check)
+
+print(m.1$coefficients[1]) #Unrounded intercept for better plotting
+
+model_intercept <-round(m.1$coefficients[1],2) # Get intercept with x-axis, rounded to 2 decimals
+text_string_for_plot <- paste("Intercept:
+", model_intercept)
+
+```
+
+
+```{r}
+# Skift titel til ny mappe-navn
+Titel <- "Plot2kHz"
+# prøver at plotte?   
+Plot2kHz <- ggplot(data = Tarskel, aes(x = Amplitude, y = PtPmV)) + 
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = FALSE)+
+  xlab("Amplitude dB")+ ylab("Peak-to-Peak mV")+ ggtitle(Titel)+
+  geom_text(aes(label=text_string_for_plot, x = 60, y = 10))
+
+# Save plot in working directory
+filename <- paste0(Titel,".png")
+ggsave(filename, plot = Plot2kHz)
+
+
+```
+
+
+
+# plot enkelt
+Df %>% tidyr::gather("id", "value", 6:6) %>% 
+  ggplot(., aes(Tid_i_ms, value))+
+  geom_point()+
+  geom_smooth(method = "lm", se=FALSE, color="black")
+
